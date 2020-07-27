@@ -7,4 +7,4 @@ env:
 before_script:
   - npm run dist
 script:
-  - npm test
+  - npm run test:node # test:browser doesn't currently work in CI environment.
