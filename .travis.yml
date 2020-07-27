@@ -1,0 +1,8 @@
+language: node_js
+env:
+  global:
+    - CI=1
+before_script:
+  - npm run dist
+script:
+  - npm test
