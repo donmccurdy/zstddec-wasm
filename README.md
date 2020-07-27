@@ -1,5 +1,9 @@
 # zstddec
 
+[![Latest NPM release](https://img.shields.io/npm/v/zstddec.svg)](https://www.npmjs.com/package/zstddec)
+[![Minzipped size](https://badgen.net/bundlephobia/minzip/zstddec)](https://bundlephobia.com/result?p=zstddec)
+[![Build Status](https://travis-ci.com/donmccurdy/zstddec.svg?branch=master)](https://travis-ci.com/donmccurdy/zstddec)
+
 [ZSTD (Zstandard)](https://github.com/facebook/zstd) decoder for Web and Node.js, using WebAssembly.
 
 ## Installation
