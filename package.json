@@ -1,6 +1,6 @@
 {
   "name": "zstddec",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "ZSTD (Zstandard) decoder for Web and Node.js, using WebAssembly",
   "main": "dist/zstddec.js",
   "module": "dist/zstddec.modern.js",
