@@ -1,6 +1,6 @@
 {
   "name": "zstddec",
-  "version": "0.0.1",
+  "version": "0.0.0",
   "description": "ZSTD (Zstandard) decoder for Web and Node.js, using WebAssembly",
   "main": "dist/zstddec.js",
   "module": "dist/zstddec.modern.js",
@@ -11,7 +11,9 @@
     "watch": "microbundle watch --format modern,cjs",
     "test": "npm run test:node && npm run test:browser",
     "test:node": "tape *.test.js | tap-spec",
-    "test:browser": "browserify *.test.js | tape-run | tap-spec"
+    "test:browser": "browserify *.test.js | tape-run | tap-spec",
+    "preversion": "npm run dist && npm run test",
+    "postversion": "git push && git push --tags && npm publish"
   },
   "keywords": [
     "zstd",
