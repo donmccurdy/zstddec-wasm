@@ -15,7 +15,7 @@ npm install --save zstddec
 ## API
 
 ```javascript
-import { ZSTDecoder } from 'zstddec';
+import { ZSTDDecoder } from 'zstddec';
 
 const decoder = new ZSTDDecoder();
 
