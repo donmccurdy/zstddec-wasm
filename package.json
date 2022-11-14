@@ -28,7 +28,7 @@
     "microbundle": "^0.12.3",
     "tap-spec": "^5.0.0",
     "tape": "^5.0.1",
-    "tape-run": "^8.0.0"
+    "tape-run": "^10.0.0"
   },
   "files": [
     "dist/",
