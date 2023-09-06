@@ -48,7 +48,28 @@ following steps:
 
 ```shell
 ./combine.sh -r ../../lib -o zstddeclib.c zstddeclib-in.c
-emcc zstddeclib.c -Oz -s EXPORTED_FUNCTIONS="['_ZSTD_decompress', '_ZSTD_findDecompressedSize', '_ZSTD_isError', '_malloc', '_free']"  -Wl,--no-entry -s STANDALONE_WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s MALLOC=emmalloc -o zstddec.wasm
+```
+
+Add the following to the end of *zstddeclib.c* to [shim out unused wasi
+imports](https://github.com/emscripten-core/emscripten/issues/17331),
+
+```c
+int __wasi_fd_write(int, int, int, int) {
+  __builtin_trap();
+}
+int __wasi_fd_seek(int, int64_t, int, int) {
+  __builtin_trap();
+}
+int __wasi_fd_close(int) {
+  __builtin_trap();
+}
+_Noreturn void  __wasi_proc_exit(int) {
+  __builtin_trap();
+}
+```
+
+```shell
+emcc zstddeclib.c -Oz -s EXPORTED_FUNCTIONS="['_ZSTD_decompress', '_ZSTD_findDecompressedSize', '_ZSTD_isError', '_malloc', '_free']"  -Wl,--no-entry -s ALLOW_MEMORY_GROWTH=1 -s MALLOC=emmalloc -o zstddec.wasm
 base64 -w 0 zstddec.wasm > zstddec.txt
 ```
 
