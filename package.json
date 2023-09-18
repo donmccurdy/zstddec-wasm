@@ -7,8 +7,8 @@
   "sideEffects": false,
   "source": "zstddec.ts",
   "types": "./dist/zstddec.d.ts",
-  "main": "dist/zstddec.cjs",
-  "module": "dist/zstddec.esm.js",
+  "main": "./dist/zstddec.cjs",
+  "module": "./dist/zstddec.esm.js",
   "exports": {
     "types": "./dist/zstddec.d.ts",
     "require": "./dist/zstddec.cjs",
