@@ -2,7 +2,7 @@
 
 [![Latest NPM release](https://img.shields.io/npm/v/zstddec.svg)](https://www.npmjs.com/package/zstddec)
 [![Minzipped size](https://badgen.net/bundlephobia/minzip/zstddec)](https://bundlephobia.com/result?p=zstddec)
-[![Build Status](https://github.com/donmccurdy/zstddec/workflows/build/badge.svg?branch=master&event=push)](https://github.com/donmccurdy/zstddec/actions?query=workflow%3Abuild)
+[![Build Status](https://github.com/donmccurdy/zstddec/workflows/build/badge.svg?branch=main&event=push)](https://github.com/donmccurdy/zstddec/actions?query=workflow%3Abuild)
 
 [ZSTD (Zstandard)](https://github.com/facebook/zstd) decoder for Web and Node.js, using WebAssembly.
 
