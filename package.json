@@ -3,17 +3,24 @@
   "version": "0.0.2",
   "description": "ZSTD (Zstandard) decoder for Web and Node.js, using WebAssembly",
   "repository": "github:donmccurdy/zstddec",
-  "main": "dist/zstddec.js",
-  "module": "dist/zstddec.modern.js",
+  "type": "module",
+  "sideEffects": false,
   "source": "zstddec.ts",
-  "types": "dist/zstddec.d.ts",
+  "types": "./dist/zstddec.d.ts",
+  "main": "dist/zstddec.cjs",
+  "module": "dist/zstddec.esm.js",
+  "exports": {
+    "types": "./dist/zstddec.d.ts",
+    "require": "./dist/zstddec.cjs",
+    "default": "./dist/zstddec.modern.js"
+  },
   "scripts": {
-    "dist": "microbundle --format modern,cjs",
-    "watch": "microbundle watch --format modern,cjs",
+    "dist": "microbundle --format modern,esm,cjs --no-compress",
+    "watch": "microbundle watch --format modern,esm,cjs --no-compress",
     "test": "npm run test:node && npm run test:browser",
-    "test:node": "tape *.test.js | tap-spec",
-    "test:browser": "browserify *.test.js | tape-run | tap-spec",
-    "preversion": "npm run dist && npm run test",
+    "test:node": "tape *.test.cjs | tap-spec",
+    "test:browser": "browserify *.test.cjs | tape-run | tap-spec",
+    "preversion": "rimraf dist/* && npm run dist && npm run test",
     "postversion": "git push && git push --tags && npm publish"
   },
   "keywords": [
@@ -26,6 +33,7 @@
   "devDependencies": {
     "browserify": "^16.5.1",
     "microbundle": "^0.15.1",
+    "rimraf": "^5.0.1",
     "tap-spec": "^5.0.0",
     "tape": "^5.0.1",
     "tape-run": "^10.0.0"
