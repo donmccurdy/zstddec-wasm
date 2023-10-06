@@ -31,12 +31,12 @@
   "author": "Don McCurdy <dm@donmccurdy.com>",
   "license": "MIT AND BSD-3-Clause",
   "devDependencies": {
-    "browserify": "^16.5.1",
+    "browserify": "^17.0.0",
     "microbundle": "^0.15.1",
-    "rimraf": "^5.0.1",
+    "rimraf": "^5.0.5",
     "tap-spec": "^5.0.0",
-    "tape": "^5.0.1",
-    "tape-run": "^10.0.0"
+    "tape": "^5.7.0",
+    "tape-run": "^11.0.0"
   },
   "files": [
     "dist/",
