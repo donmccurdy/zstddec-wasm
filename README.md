@@ -47,31 +47,16 @@ Compiled from https://github.com/facebook/zstd/tree/dev/build/single_file_libs, 
 following steps:
 
 ```shell
-./combine.sh -r ../../lib -o zstddeclib.c zstddeclib-in.c
-```
-
-Add the following to the end of *zstddeclib.c* to [shim out unused wasi
-imports](https://github.com/emscripten-core/emscripten/issues/17331),
-
-```c
-int __wasi_fd_write(int, int, int, int) {
-  __builtin_trap();
-}
-int __wasi_fd_seek(int, int64_t, int, int) {
-  __builtin_trap();
-}
-int __wasi_fd_close(int) {
-  __builtin_trap();
-}
-_Noreturn void  __wasi_proc_exit(int) {
-  __builtin_trap();
-}
+./create_single_file_decoder.sh
 ```
 
 ```shell
-emcc zstddeclib.c -Oz -s EXPORTED_FUNCTIONS="['_ZSTD_decompress', '_ZSTD_findDecompressedSize', '_ZSTD_isError', '_malloc', '_free']"  -Wl,--no-entry -s ALLOW_MEMORY_GROWTH=1 -s MALLOC=emmalloc -o zstddec.wasm
+emcc zstddeclib.c -s EXPORTED_FUNCTIONS="['_ZSTD_decompress', '_ZSTD_findDecompressedSize', '_ZSTD_isError', '_malloc', '_free']"  -Wl,--no-entry -s WASM=1 -Oz -g0 -flto -s ALLOW_MEMORY_GROWTH=1 -s MALLOC=emmalloc -s FILESYSTEM=0 -s STANDALONE_WASM=1 -DNDEBUG=1 -s PURE_WASI=0 -o zstddec.wasm
 base64 -w 0 zstddec.wasm > zstddec.txt
 ```
+
+> **Note**
+The `-w 0` argument is only for the `base64` shipped on Linux systems -- on macOS this should be omitted.
 
 The base64 string written to `zstddec.txt` is embedded as the `wasm` variable at the bottom
 of the source file. The rest of the file is written by hand, in order to avoid an additional JS
