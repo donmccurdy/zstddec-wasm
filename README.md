@@ -50,6 +50,10 @@ following steps:
 ./create_single_file_decoder.sh
 ```
 
+> **Note**
+The current build is based on zstd v1.5.0. The binary sized increased
+following this version.
+
 ```shell
 emcc zstddeclib.c -s EXPORTED_FUNCTIONS="['_ZSTD_decompress', '_ZSTD_findDecompressedSize', '_ZSTD_isError', '_malloc', '_free']"  -Wl,--no-entry -s WASM=1 -Oz -g0 -flto -s ALLOW_MEMORY_GROWTH=1 -s MALLOC=emmalloc -s FILESYSTEM=0 -s STANDALONE_WASM=1 -DNDEBUG=1 -s PURE_WASI=0 -o zstddec.wasm
 base64 -w 0 zstddec.wasm > zstddec.txt
