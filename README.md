@@ -24,7 +24,7 @@ await decoder.init();
 const decompressedArray = decoder.decode( compressedArray, uncompressedSize );
 ```
 
-> **Limitations:** The decoder may fail with the error `wasm function signature contains illegal type` when the `uncompressedSize` is not known in advance and given to the `decode()` method. This is presumably a bug in the WASM bindings, which I am not yet sure how to fix.
+> **Limitations:** The decoder may fail with the error `wasm function signature contains illegal type` when the `uncompressedSize` is not known in advance and given to the `decode()` method. To avoid this, ZSTD's streaming decompression functions should be used, which are not yet implemented in this library.
 
 ## Contributing
 
@@ -43,13 +43,13 @@ npm test
 
 ## Building from source
 
-Compiled from https://github.com/facebook/zstd/tree/dev/contrib/single_file_libs, with the
+Compiled from https://github.com/facebook/zstd/tree/dev/build/single_file_libs, with the
 following steps:
 
 ```shell
-./combine.sh -r ../../lib -o zstddeclib.c zstddeclib-in.c
-emcc zstddeclib.c -Oz -s EXPORTED_FUNCTIONS="['_ZSTD_decompress', '_ZSTD_findDecompressedSize', '_ZSTD_isError', '_malloc', '_free']" -s ALLOW_MEMORY_GROWTH=1 -s MALLOC=emmalloc -o zstddec.wasm
-base64 zstddec.wasm > zstddec.txt
+./create_single_file_decoder.sh
+emcc zstddeclib.c --no-entry -Oz -s EXPORTED_FUNCTIONS="['_ZSTD_decompress', '_ZSTD_getFrameContentSize', '_ZSTD_isError', '_malloc', '_free']" -s ALLOW_MEMORY_GROWTH=1 -s MALLOC=emmalloc -o zstddec.wasm
+base64 zstddec.wasm -w 0 > zstddec.txt
 ```
 
 The base64 string written to `zstddec.txt` is embedded as the `wasm` variable at the bottom
