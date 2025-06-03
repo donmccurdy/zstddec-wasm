@@ -1,33 +1,22 @@
-interface DecoderExports {
-	memory: Uint8Array;
+import { StreamDecoderExports } from "./types";
 
-	ZSTD_findDecompressedSize: (compressedPtr: number, compressedSize: number) => BigInt;
-	ZSTD_decompress: (uncompressedPtr: number, uncompressedSize: number, compressedPtr: number, compressedSize: number) => number;
-	ZSTD_createDCtx: () => number;
-	ZSTD_decompressStream: (dctx: number, output: number, input: number) => number;
-	ZSTD_freeDCtx: (dctx: number) => void;
-	ZSTD_DStreamInSize: () => number;
-	ZSTD_DStreamOutSize: () => number;
-	malloc: (ptr: number) => number;
-	free: (ptr: number) => void;
-}
 /**
  * Some C structs for reference:
 	typedef struct ZSTD_inBuffer_s {
-		const void* src;   
-		size_t size;       
-		size_t pos;        
+		const void* src;
+		size_t size;
+		size_t pos;
 	} ZSTD_inBuffer;
 
 	typedef struct ZSTD_outBuffer_s {
-		void*  dst;        
-		size_t size;      
-		size_t pos;       
+		void*  dst;
+		size_t size;
+		size_t pos;
 	} ZSTD_outBuffer;
  */
 
 let init: Promise<void>;
-let instance: {exports: DecoderExports};
+let instance: {exports: StreamDecoderExports};
 let heap: Uint8Array;
 let heapView: DataView;
 
@@ -80,7 +69,7 @@ export class ZSTDDecoder {
 
 	_init ( result: WebAssembly.WebAssemblyInstantiatedSource ): void {
 
-		instance = result.instance as unknown as { exports: DecoderExports };
+		instance = result.instance as unknown as { exports: StreamDecoderExports };
 
 		IMPORT_OBJECT.env.emscripten_notify_memory_growth( 0 ); // initialize heap.
 
@@ -99,7 +88,7 @@ export class ZSTDDecoder {
 		if (uncompressedSize === 0) {
 			uncompressedSize = Number( instance.exports.ZSTD_findDecompressedSize( compressedPtr, compressedSize ) );
 		}
-		
+
 		if (uncompressedSize === -1) {
 			instance.exports.free(compressedPtr);
 			const parts = [];
@@ -112,7 +101,7 @@ export class ZSTDDecoder {
 			if (parts.length === 1){
 				return parts[0];
 			}
-			
+
 			// we may need to stitch together all the accumulated parts
 			const fullByteLength = parts.reduce(((acc, arr) => acc + arr.byteLength), 0);
 			const result = new Uint8Array(fullByteLength);
@@ -152,7 +141,7 @@ export class ZSTDDecoder {
 		// we cannot create a struct to pass a pointer to. Thus we need to alloc for the input/output structs and set the fields manually
 		const inputPtr = instance.exports.malloc(sizeOfPointer + sizeOfSizeT * 2);
 		const outputPtr = instance.exports.malloc(sizeOfPointer + sizeOfSizeT * 2);
-		
+
 
 		for (const array of arrays) {
 			const compressedPtr = instance.exports.malloc(array.byteLength);

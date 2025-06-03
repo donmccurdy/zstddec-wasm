@@ -1,11 +1,4 @@
-interface DecoderExports {
-	memory: Uint8Array;
-
-	ZSTD_findDecompressedSize: (compressedPtr: number, compressedSize: number) => BigInt;
-	ZSTD_decompress: (uncompressedPtr: number, uncompressedSize: number, compressedPtr: number, compressedSize: number) => number;
-	malloc: (ptr: number) => number;
-	free: (ptr: number) => void;
-}
+import { DecoderExports } from "./types";
 
 let init: Promise<void>;
 let instance: {exports: DecoderExports};
