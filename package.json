@@ -20,7 +20,8 @@
     "test": "npm run test:node && npm run test:browser",
     "test:node": "tape *.test.cjs | tap-spec",
     "test:browser": "browserify *.test.cjs | tape-run | tap-spec",
-    "preversion": "rimraf dist/* && npm run dist && npm run test",
+    "clean": "rm -rf dist/* || true",
+    "preversion": "yarn clean && npm run dist && npm run test",
     "postversion": "git push && git push --tags && npm publish"
   },
   "keywords": [
@@ -33,7 +34,6 @@
   "devDependencies": {
     "browserify": "^17.0.0",
     "microbundle": "^0.15.1",
-    "rimraf": "^5.0.5",
     "tap-spec": "^5.0.0",
     "tape": "^5.7.0",
     "tape-run": "^11.0.0"
