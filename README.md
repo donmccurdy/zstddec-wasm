@@ -48,8 +48,14 @@ following steps:
 
 ```shell
 ./combine.sh -r ../../lib -o zstddeclib.c zstddeclib-in.c
-emcc zstddeclib.c -Oz -s EXPORTED_FUNCTIONS="['_ZSTD_decompress', '_ZSTD_findDecompressedSize', '_ZSTD_createDCtx', '_ZSTD_decompressStream', '_ZSTD_freeDCtx', '_ZSTD_DStreamInSize', '_ZSTD_DStreamOutSize', '_malloc', '_free']" -s ALLOW_MEMORY_GROWTH=1 -s MALLOC=emmalloc -o zstddec.wasm
+
+# non-streaming
+emcc zstddeclib.c -Oz -s EXPORTED_FUNCTIONS="['_ZSTD_decompress', '_ZSTD_findDecompressedSize', '_ZSTD_isError', '_malloc', '_free']" -s ALLOW_MEMORY_GROWTH=1 -s MALLOC=emmalloc -o zstddec.wasm
 base64 zstddec.wasm > zstddec.txt
+
+# streaming
+emcc zstddeclib.c -Oz -s EXPORTED_FUNCTIONS="['_ZSTD_decompress', '_ZSTD_findDecompressedSize', '_ZSTD_createDCtx', '_ZSTD_decompressStream', '_ZSTD_freeDCtx', '_ZSTD_DStreamInSize', '_ZSTD_DStreamOutSize', '_malloc', '_free']" -s ALLOW_MEMORY_GROWTH=1 -s MALLOC=emmalloc -o zstddec-stream.wasm
+base64 zstddec-stream.wasm > zstddec-stream.txt
 ```
 
 The base64 string written to `zstddec.txt` is embedded as the `wasm` variable at the bottom
