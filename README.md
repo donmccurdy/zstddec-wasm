@@ -31,14 +31,14 @@ const decompressedArray = decoder.decode( compressedArray, uncompressedSize );
 To build the project locally, run:
 
 ```
-npm install
-npm run dist
+yarn install
+yarn build
 ```
 
 To test changes:
 
 ```
-npm test
+yarn test
 ```
 
 ## Building from source

@@ -17,5 +17,5 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - run: corepack enable
     - run: yarn install
-    - run: yarn dist
+    - run: yarn build
     - run: yarn test:node
