@@ -23,11 +23,11 @@
   "scripts": {
     "dist": "microbundle {zstddec,zstddec-stream}.ts --format modern,esm,cjs --no-compress",
     "watch": "microbundle watch {zstddec,zstddec-stream}.ts --format modern,esm,cjs --no-compress",
-    "test": "npm run test:node && npm run test:browser",
+    "test": "yarn test:node && yarn test:browser",
     "test:node": "tape *.test.cjs | tap-spec",
     "test:browser": "browserify *.test.cjs | tape-run | tap-spec",
     "clean": "rm -rf dist/* || true",
-    "preversion": "yarn clean && npm run dist && npm run test",
+    "preversion": "yarn clean && yarn dist && yarn test",
     "postversion": "git push && git push --tags && npm publish"
   },
   "keywords": [
