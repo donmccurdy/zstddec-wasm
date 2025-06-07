@@ -50,7 +50,7 @@ following steps:
 # build zstd
 make
 cd build/single_file_libs
-./combine.sh -r ../../lib -o zstddeclib.c zstddeclib-in.c
+./create_single_file_decoder.sh
 
 # build wasm
 emcc zstddeclib.c -s EXPORTED_FUNCTIONS="['_ZSTD_decompress', '_ZSTD_findDecompressedSize', '_ZSTD_isError', '_malloc', '_free']" -Wl,--no-entry -s WASM=1 -Oz -g0 -flto -s ALLOW_MEMORY_GROWTH=1 -s FILESYSTEM=0 -s STANDALONE_WASM=1 -DNDEBUG=1 -s PURE_WASI=0 -o zstddec.wasm
@@ -59,8 +59,8 @@ emcc zstddeclib.c -s EXPORTED_FUNCTIONS="['_ZSTD_decompress', '_ZSTD_findDecompr
 emcc zstddeclib.c -s EXPORTED_FUNCTIONS="['_ZSTD_decompress', '_ZSTD_findDecompressedSize', '_ZSTD_createDCtx', '_ZSTD_decompressStream', '_ZSTD_freeDCtx', '_ZSTD_DStreamInSize', '_ZSTD_DStreamOutSize', '_malloc', '_free']" -Wl,--no-entry -s WASM=1 -Oz -g0 -flto -s ALLOW_MEMORY_GROWTH=1 -s FILESYSTEM=0 -s STANDALONE_WASM=1 -DNDEBUG=1 -s PURE_WASI=0 -o zstddec-stream.wasm
 
 # encode WASM to base64
-base64 -i zstddec.wasm -o zstddec.txt
-base64 -i zstddec-stream.wasm -o zstddec-stream.txt
+base64 -i zstddec.wasm > zstddec.txt
+base64 -i zstddec-stream.wasm > zstddec-stream.txt
 ```
 
 The base64 string written to `zstddec.txt` is embedded as the `wasm` variable at the bottom
