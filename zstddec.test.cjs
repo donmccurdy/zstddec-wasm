@@ -1,5 +1,5 @@
-const test = require('node:tape');
-const util = require('node:util');
+const test = require('tape');
+const util = require('util');
 const { ZSTDDecoder } = require('./dist/zstddec.cjs');
 const { ZSTDDecoder: ZSTDDecoderStreaming } = require('./dist/zstddec-stream.cjs');
 
