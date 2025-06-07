@@ -26,9 +26,15 @@
     "test": "yarn test:node && yarn test:browser",
     "test:node": "tape *.test.cjs | tap-spec",
     "test:browser": "browserify *.test.cjs | tape-run | tap-spec",
+    "lint": "biome check *.ts *.cjs biome.json .github/**/*.yml",
+    "lint:ci": "biome ci *.ts *.cjs biome.json .github/**/*.yml",
     "clean": "rm -rf dist/* || true",
-    "preversion": "yarn clean && yarn dist && yarn test",
-    "postversion": "git push && git push --tags && npm publish"
+    "release": "yarn postversion:commit && yarn npm publish && yarn postversion:push",
+    "prerelease": "yarn postversion:commit && yarn npm publish --tag alpha && yarn postversion:push",
+    "postversion:commit": "git add -u && git commit -m \"chore(release): v$npm_package_version\" && git tag -a v$npm_package_version -m v$npm_package_version",
+    "postversion:push": "git push && git push --tags && yarn coverage:report",
+    "prepublish": "yarn lint && yarn test && yarn validate",
+    "prepack": "yarn clean && yarn build"
   },
   "keywords": [
     "zstd",
@@ -38,6 +44,7 @@
   "author": "Don McCurdy <dm@donmccurdy.com>",
   "license": "MIT AND BSD-3-Clause",
   "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
     "browserify": "^17.0.0",
     "microbundle": "^0.15.1",
     "tap-spec": "^5.0.0",

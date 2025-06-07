@@ -1,0 +1,19 @@
+{
+	"formatter": {
+		"ignore": ["package.json"],
+		"indentStyle": "tab",
+		"lineWidth": 120
+	},
+	"linter": {
+		"rules": {
+			"style": {
+				"noParameterAssign": "off"
+			}
+		}
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "single"
+		}
+	}
+}
