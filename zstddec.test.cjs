@@ -1,6 +1,7 @@
 const test = require('tape');
 const util = require('util');
-const { ZSTDDecoder } = require('./');
+const { ZSTDDecoder } = require('./dist/zstddec.cjs');
+const { ZSTDDecoder: ZSTDDecoderStreaming } = require('./dist/zstddec-stream.cjs');
 
 const { TextDecoder } = typeof window === 'undefined' ? util : window;
 
@@ -15,6 +16,15 @@ test('zstddec', async (t) => {
 	const zstd = new ZSTDDecoder();
 	await zstd.init();
 	const data = zstd.decode(HELLO_WORLD_ZSTD, 13);
+	const text = new TextDecoder().decode(data);
+	t.equals(text, 'hello world!\n', 'decodes text');
+	t.end();
+});
+
+test('zstddec-stream', async (t) => {
+	const zstd = new ZSTDDecoderStreaming();
+	await zstd.init();
+	const data = zstd.decode(HELLO_WORLD_ZSTD); // uncompressed length optional
 	const text = new TextDecoder().decode(data);
 	t.equals(text, 'hello world!\n', 'decodes text');
 	t.end();
