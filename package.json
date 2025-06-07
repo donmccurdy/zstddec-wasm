@@ -21,7 +21,7 @@
     }
   },
   "scripts": {
-    "dist": "microbundle {zstddec,zstddec-stream}.ts --format modern,esm,cjs --no-compress",
+    "build": "microbundle {zstddec,zstddec-stream}.ts --format modern,esm,cjs --no-compress",
     "watch": "microbundle watch {zstddec,zstddec-stream}.ts --format modern,esm,cjs --no-compress",
     "test": "yarn test:node && yarn test:browser",
     "test:node": "tape *.test.cjs | tap-spec",
