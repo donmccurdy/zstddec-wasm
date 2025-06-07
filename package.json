@@ -10,14 +10,14 @@
   "module": "./dist/zstddec.esm.js",
   "exports": {
     ".": {
-	    "types": "./dist/zstddec.d.ts",
-	    "require": "./dist/zstddec.cjs",
-	    "default": "./dist/zstddec.modern.js"
+      "types": "./dist/zstddec.d.ts",
+      "require": "./dist/zstddec.cjs",
+      "default": "./dist/zstddec.modern.js"
     },
     "./stream": {
-	    "types": "./dist/zstddec-stream.d.ts",
-	    "require": "./dist/zstddec-stream.cjs",
-	    "default": "./dist/zstddec-stream.modern.js"
+      "types": "./dist/zstddec-stream.d.ts",
+      "require": "./dist/zstddec-stream.cjs",
+      "default": "./dist/zstddec-stream.modern.js"
     }
   },
   "scripts": {
@@ -50,5 +50,6 @@
     "README.md",
     "package.json",
     "package-lock.json"
-  ]
+  ],
+  "packageManager": "yarn@4.9.2"
 }
