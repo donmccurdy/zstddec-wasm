@@ -1,6 +1,6 @@
 {
   "name": "zstddec",
-  "version": "0.1.0",
+  "version": "0.2.0-alpha.0",
   "description": "ZSTD (Zstandard) decoder for Web and Node.js, using WebAssembly",
   "repository": "github:donmccurdy/zstddec",
   "type": "module",
@@ -58,5 +58,6 @@
     "package.json",
     "package-lock.json"
   ],
-  "packageManager": "yarn@4.9.2"
+  "packageManager": "yarn@4.9.2",
+  "stableVersion": "0.1.0"
 }
