@@ -21,11 +21,11 @@
     }
   },
   "scripts": {
-    "build": "microbundle {zstddec,zstddec-stream}.ts --format modern,esm,cjs --no-compress",
-    "watch": "microbundle watch {zstddec,zstddec-stream}.ts --format modern,esm,cjs --no-compress",
+    "build": "microbundle src/{zstddec,zstddec-stream}.ts --format modern,esm,cjs --no-compress",
+    "watch": "microbundle watch src/{zstddec,zstddec-stream}.ts --format modern,esm,cjs --no-compress",
     "test": "yarn test:node && yarn test:browser",
-    "test:node": "tape *.test.cjs | tap-spec",
-    "test:browser": "browserify *.test.cjs | tape-run | tap-spec",
+    "test:node": "tape test/*.test.cjs | tap-spec",
+    "test:browser": "browserify test/*.test.cjs | tape-run | tap-spec",
     "lint": "biome check *.ts *.cjs biome.json .github/**/*.yml",
     "lint:ci": "biome ci *.ts *.cjs biome.json .github/**/*.yml",
     "clean": "rm -rf dist/* || true",

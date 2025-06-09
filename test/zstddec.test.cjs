@@ -1,7 +1,7 @@
 const test = require('tape');
 const util = require('util');
-const { ZSTDDecoder } = require('./dist/zstddec.cjs');
-const { ZSTDDecoder: ZSTDDecoderStreaming } = require('./dist/zstddec-stream.cjs');
+const { ZSTDDecoder } = require('../dist/zstddec.cjs');
+const { ZSTDDecoder: ZSTDDecoderStreaming } = require('../dist/zstddec-stream.cjs');
 
 const { TextDecoder } = typeof window === 'undefined' ? util : window;
 
