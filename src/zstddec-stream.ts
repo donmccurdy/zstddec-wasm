@@ -127,6 +127,7 @@ export class ZSTDDecoder {
 		// we cannot create a struct to pass a pointer to. Thus we need to alloc for the input/output structs and set the fields manually
 		const inputPtr = instance.exports.malloc(sizeOfPointer + sizeOfSizeT * 2);
 		const outputPtr = instance.exports.malloc(sizeOfPointer + sizeOfSizeT * 2);
+		let lastRet = 0;
 
 		for (const array of arrays) {
 			const compressedPtr = instance.exports.malloc(array.byteLength);
@@ -147,11 +148,10 @@ export class ZSTDDecoder {
 				heapView.setInt32(outputPtr + sizeOfPointer, buffOutSize, true);
 				heapView.setInt32(outputPtr + sizeOfPointer + sizeOfSizeT, 0, true);
 
-				const ret = instance.exports.ZSTD_decompressStream(dctxPtr, outputPtr, inputPtr);
-				// TODO: check return value
+				lastRet = instance.exports.ZSTD_decompressStream(dctxPtr, outputPtr, inputPtr);
 
 				// see how many bytes were written to the output buffer
-				const outputPos = heapView.getUint32(outputPtr + sizeOfPointer + sizeOfSizeT);
+				const outputPos = heapView.getUint32(outputPtr + sizeOfPointer + sizeOfSizeT, true);
 				yield heap.slice(buffOut, buffOut + outputPos);
 			}
 			instance.exports.free(compressedPtr);
@@ -162,6 +162,10 @@ export class ZSTDDecoder {
 		instance.exports.free(buffOut);
 		instance.exports.free(inputPtr);
 		instance.exports.free(outputPtr);
+
+		if (lastRet !== 0) {
+			throw new Error('Incomplete stream, more data expected.');
+		}
 	}
 }
 
