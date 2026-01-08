@@ -1,6 +1,6 @@
 {
 	"formatter": {
-		"ignore": ["package.json"],
+		"includes": ["**", "!**/package.json"],
 		"indentStyle": "tab",
 		"lineWidth": 120
 	},

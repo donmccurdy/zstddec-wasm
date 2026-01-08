@@ -44,11 +44,11 @@
   "author": "Don McCurdy <dm@donmccurdy.com>",
   "license": "MIT AND BSD-3-Clause",
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
-    "browserify": "^17.0.0",
+    "@biomejs/biome": "^2.3.11",
+    "browserify": "^17.0.1",
     "microbundle": "^0.15.1",
     "tap-spec": "^5.0.0",
-    "tape": "^5.7.0",
+    "tape": "^5.9.0",
     "tape-run": "^11.0.0"
   },
   "files": [
