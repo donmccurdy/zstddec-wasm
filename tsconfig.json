@@ -1,8 +1,8 @@
 {
+	"include": ["src/*.ts", "test/*.ts"],
 	"compilerOptions": {
-		"lib": ["es6", "dom"],
 		"target": "es6",
-		"declaration": true
-	},
-	"include": ["src/*.ts"]
+		"declaration": true,
+		"types": ["node"]
+	}
 }
