@@ -1,8 +1,7 @@
-const test = require('tape');
-const util = require('util');
-const { ZSTDDecoder } = require('../dist/zstddec-stream.cjs');
-
-const { TextDecoder } = typeof window === 'undefined' ? util : window;
+import assert from 'node:assert';
+import { test } from 'node:test';
+import { TextDecoder } from 'node:util';
+import { ZSTDDecoder } from '../dist/zstddec-stream.modern.js';
 
 const SHORT_TEXT = 'hello world!\n'; // 13 bytes
 const SHORT_TEXT_ZSTD = new Uint8Array([
@@ -22,19 +21,18 @@ const LONG_TEXT_ZSTD = new Uint8Array([
 // Full Decode Tests
 //=============================================================================
 
-test('zstddec-stream: full decode with known uncompressed size', async (t) => {
+test('zstddec-stream: full decode with known uncompressed size', async () => {
 	const zstd = new ZSTDDecoder();
 	await zstd.init();
 
 	const data = zstd.decode(SHORT_TEXT_ZSTD, SHORT_TEXT.length);
 	const text = new TextDecoder().decode(data);
 
-	t.equals(text, SHORT_TEXT, 'decodes text correctly with known size');
-	t.equals(data.byteLength, SHORT_TEXT.length, 'output has expected length');
-	t.end();
+	assert.strictEqual(text, SHORT_TEXT, 'decodes text correctly with known size');
+	assert.strictEqual(data.byteLength, SHORT_TEXT.length, 'output has expected length');
 });
 
-test('zstddec-stream: full decode without known uncompressed size', async (t) => {
+test('zstddec-stream: full decode without known uncompressed size', async () => {
 	const zstd = new ZSTDDecoder();
 	await zstd.init();
 
@@ -42,53 +40,52 @@ test('zstddec-stream: full decode without known uncompressed size', async (t) =>
 	const data = zstd.decode(SHORT_TEXT_ZSTD);
 	const text = new TextDecoder().decode(data);
 
-	t.equals(text, SHORT_TEXT, 'decodes text correctly without known size');
-	t.equals(data.byteLength, SHORT_TEXT.length, 'output has expected length');
-	t.end();
+	assert.strictEqual(text, SHORT_TEXT, 'decodes text correctly without known size');
+	assert.strictEqual(data.byteLength, SHORT_TEXT.length, 'output has expected length');
 });
 
-test('zstddec-stream: full decode longer text without known size', async (t) => {
+test('zstddec-stream: full decode longer text without known size', async () => {
 	const zstd = new ZSTDDecoder();
 	await zstd.init();
 
 	const data = zstd.decode(LONG_TEXT_ZSTD);
 	const text = new TextDecoder().decode(data);
 
-	t.equals(text, LONG_TEXT, 'decodes longer text correctly');
-	t.equals(data.byteLength, LONG_TEXT.length, 'output has expected length');
-	t.end();
+	assert.strictEqual(text, LONG_TEXT, 'decodes longer text correctly');
+	assert.strictEqual(data.byteLength, LONG_TEXT.length, 'output has expected length');
 });
 
-test('zstddec-stream: full decode with explicit size for longer text', async (t) => {
+test('zstddec-stream: full decode with explicit size for longer text', async () => {
 	const zstd = new ZSTDDecoder();
 	await zstd.init();
 
 	const data = zstd.decode(LONG_TEXT_ZSTD, LONG_TEXT.length);
 	const text = new TextDecoder().decode(data);
 
-	t.equals(text, LONG_TEXT, 'decodes longer text correctly with explicit size');
-	t.equals(data.byteLength, LONG_TEXT.length, 'output has expected length');
-	t.end();
+	assert.strictEqual(text, LONG_TEXT, 'decodes longer text correctly with explicit size');
+	assert.strictEqual(data.byteLength, LONG_TEXT.length, 'output has expected length');
 });
 
-test('zstddec-stream: decode without init should throw error', async (t) => {
+test('zstddec-stream: decode without init should throw error', async () => {
 	const zstd = new ZSTDDecoder();
 
 	try {
 		zstd.decode(SHORT_TEXT_ZSTD);
 		// If we get here, the implementation doesn't throw - test behavior as-is
-		t.pass('decode works without explicit init (auto-initializes or uses shared instance)');
+		// decode works without explicit init (auto-initializes or uses shared instance)
 	} catch (err) {
-		t.ok(err.message.includes('Await .init() before decoding'), 'throws error when decode called before init');
+		assert.ok(
+			(err as Error).message.includes('Await .init() before decoding'),
+			'throws error when decode called before init',
+		);
 	}
-	t.end();
 });
 
 //=============================================================================
 // Streaming Decode Tests
 //=============================================================================
 
-test('zstddec-stream: streaming decode with single chunk', async (t) => {
+test('zstddec-stream: streaming decode with single chunk', async () => {
 	const zstd = new ZSTDDecoder();
 	await zstd.init();
 
@@ -96,11 +93,10 @@ test('zstddec-stream: streaming decode with single chunk', async (t) => {
 	const bytes = fromChunks(Array.from(zstd.decodeStreaming(chunks)));
 	const text = new TextDecoder().decode(bytes);
 
-	t.equals(text, SHORT_TEXT, 'streaming decode produces correct output');
-	t.end();
+	assert.strictEqual(text, SHORT_TEXT, 'streaming decode produces correct output');
 });
 
-test('zstddec-stream: streaming decode with multiple small chunks', async (t) => {
+test('zstddec-stream: streaming decode with multiple small chunks', async () => {
 	const zstd = new ZSTDDecoder();
 	await zstd.init();
 
@@ -108,11 +104,10 @@ test('zstddec-stream: streaming decode with multiple small chunks', async (t) =>
 	const bytes = fromChunks(Array.from(zstd.decodeStreaming(chunks)));
 	const text = new TextDecoder().decode(bytes);
 
-	t.equals(text, SHORT_TEXT, 'streaming decode with multiple chunks produces correct output');
-	t.end();
+	assert.strictEqual(text, SHORT_TEXT, 'streaming decode with multiple chunks produces correct output');
 });
 
-test('zstddec-stream: streaming decode longer text with multiple chunks', async (t) => {
+test('zstddec-stream: streaming decode longer text with multiple chunks', async () => {
 	const zstd = new ZSTDDecoder();
 	await zstd.init();
 
@@ -120,11 +115,10 @@ test('zstddec-stream: streaming decode longer text with multiple chunks', async 
 	const bytes = fromChunks(Array.from(zstd.decodeStreaming(chunks)));
 	const text = new TextDecoder().decode(bytes);
 
-	t.equals(text, LONG_TEXT, 'streaming decode longer text with multiple chunks produces correct output');
-	t.end();
+	assert.strictEqual(text, LONG_TEXT, 'streaming decode longer text with multiple chunks produces correct output');
 });
 
-test('zstddec-stream: streaming decode with very small chunks', async (t) => {
+test('zstddec-stream: streaming decode with very small chunks', async () => {
 	const zstd = new ZSTDDecoder();
 	await zstd.init();
 
@@ -132,53 +126,50 @@ test('zstddec-stream: streaming decode with very small chunks', async (t) => {
 	const bytes = fromChunks(Array.from(zstd.decodeStreaming(chunks)));
 	const text = new TextDecoder().decode(bytes);
 
-	t.equals(text, LONG_TEXT, 'streaming decode with very small chunks produces correct output');
-	t.end();
+	assert.strictEqual(text, LONG_TEXT, 'streaming decode with very small chunks produces correct output');
 });
 
-test('zstddec-stream: streaming decode with empty array behavior', async (t) => {
+test('zstddec-stream: streaming decode with empty array behavior', async () => {
 	const zstd = new ZSTDDecoder();
 	await zstd.init();
 
-	const chunks = [];
+	const chunks: Uint8Array[] = [];
 
 	try {
 		const results = Array.from(zstd.decodeStreaming(chunks));
 		// If no error, check that results are empty or test passes
-		t.equals(results.length, 0, 'empty input produces no output chunks');
+		assert.strictEqual(results.length, 0, 'empty input produces no output chunks');
 	} catch (err) {
 		// If it throws, that's also acceptable behavior
-		t.ok(
-			err.message.includes('Incomplete stream') || err.message.length > 0,
+		assert.ok(
+			(err as Error).message.includes('Incomplete stream') || (err as Error).message.length > 0,
 			'throws error for incomplete stream with no data',
 		);
 	}
-	t.end();
 });
 
-test('zstddec-stream: streaming decode without init behavior', async (t) => {
+test('zstddec-stream: streaming decode without init behavior', async () => {
 	const zstd = new ZSTDDecoder();
 
 	try {
 		const chunks = [SHORT_TEXT_ZSTD];
 		Array.from(zstd.decodeStreaming(chunks));
 		// If we get here, it works without explicit init
-		t.pass('streaming decode works without explicit init (uses shared instance)');
+		// streaming decode works without explicit init (uses shared instance)
 	} catch (err) {
 		// If it throws, that's the expected behavior
-		t.ok(
-			err.message.includes('Await .init() before decoding'),
+		assert.ok(
+			(err as Error).message.includes('Await .init() before decoding'),
 			'throws error when streaming decode called before init',
 		);
 	}
-	t.end();
 });
 
 //=============================================================================
 // Reusability Tests
 //=============================================================================
 
-test('zstddec-stream: decoder can be reused for multiple full decodes', async (t) => {
+test('zstddec-stream: decoder can be reused for multiple full decodes', async () => {
 	const zstd = new ZSTDDecoder();
 	await zstd.init();
 
@@ -186,21 +177,20 @@ test('zstddec-stream: decoder can be reused for multiple full decodes', async (t
 	const data1 = zstd.decode(SHORT_TEXT_ZSTD);
 	const text1 = new TextDecoder().decode(data1);
 
-	t.equals(text1, SHORT_TEXT, 'first decode successful');
+	assert.strictEqual(text1, SHORT_TEXT, 'first decode successful');
 
 	const data2 = zstd.decode(SHORT_TEXT_ZSTD);
 	const text2 = new TextDecoder().decode(data2);
 
-	t.equals(text2, SHORT_TEXT, 'second decode successful');
+	assert.strictEqual(text2, SHORT_TEXT, 'second decode successful');
 
 	const data3 = zstd.decode(LONG_TEXT_ZSTD);
 	const text3 = new TextDecoder().decode(data3);
 
-	t.equals(text3, LONG_TEXT, 'third decode with different data successful');
-	t.end();
+	assert.strictEqual(text3, LONG_TEXT, 'third decode with different data successful');
 });
 
-test('zstddec-stream: decoder can be reused for multiple streaming decodes', async (t) => {
+test('zstddec-stream: decoder can be reused for multiple streaming decodes', async () => {
 	const zstd = new ZSTDDecoder();
 	await zstd.init();
 
@@ -208,17 +198,16 @@ test('zstddec-stream: decoder can be reused for multiple streaming decodes', asy
 	const bytes1 = fromChunks(Array.from(zstd.decodeStreaming(chunks1)));
 	const text1 = new TextDecoder().decode(bytes1);
 
-	t.equals(text1, SHORT_TEXT, 'first streaming decode successful');
+	assert.strictEqual(text1, SHORT_TEXT, 'first streaming decode successful');
 
 	const chunks2 = toChunks(LONG_TEXT_ZSTD, 10);
 	const bytes2 = fromChunks(Array.from(zstd.decodeStreaming(chunks2)));
 	const text2 = new TextDecoder().decode(bytes2);
 
-	t.equals(text2, LONG_TEXT, 'second streaming decode successful');
-	t.end();
+	assert.strictEqual(text2, LONG_TEXT, 'second streaming decode successful');
 });
 
-test('zstddec-stream: init can be called multiple times safely', async (t) => {
+test('zstddec-stream: init can be called multiple times safely', async () => {
 	const zstd = new ZSTDDecoder();
 
 	await zstd.init();
@@ -227,8 +216,7 @@ test('zstddec-stream: init can be called multiple times safely', async (t) => {
 
 	const text = new TextDecoder().decode(zstd.decode(SHORT_TEXT_ZSTD));
 
-	t.equals(text, SHORT_TEXT, 'decoder still works after multiple init calls');
-	t.end();
+	assert.strictEqual(text, SHORT_TEXT, 'decoder still works after multiple init calls');
 });
 
 //=============================================================================
@@ -238,7 +226,7 @@ test('zstddec-stream: init can be called multiple times safely', async (t) => {
 /**
  * Splits a byte array into N-byte chunks.
  */
-function toChunks(array, chunkByteLength) {
+function toChunks(array: Uint8Array, chunkByteLength: number) {
 	const chunks = [];
 	for (let i = 0; i < array.length; i += chunkByteLength) {
 		chunks.push(array.slice(i, i + chunkByteLength));
@@ -249,7 +237,7 @@ function toChunks(array, chunkByteLength) {
 /**
  * Concatenates N byte arrays.
  */
-function fromChunks(arrays) {
+function fromChunks(arrays: Uint8Array[]) {
 	let totalByteLength = 0;
 	for (const array of arrays) {
 		totalByteLength += array.byteLength;
