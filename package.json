@@ -5,24 +5,21 @@
   "repository": "github:donmccurdy/zstddec",
   "type": "module",
   "sideEffects": false,
-  "types": "./dist/zstddec.d.ts",
-  "main": "./dist/zstddec.cjs",
-  "module": "./dist/zstddec.esm.js",
+  "types": "./dist/zstddec.d.mts",
+  "main": "./dist/zstddec.mjs",
   "exports": {
     ".": {
       "types": "./dist/zstddec.d.ts",
-      "require": "./dist/zstddec.cjs",
-      "default": "./dist/zstddec.modern.js"
+      "default": "./dist/zstddec.mjs"
     },
     "./stream": {
-      "types": "./dist/zstddec-stream.d.ts",
-      "require": "./dist/zstddec-stream.cjs",
-      "default": "./dist/zstddec-stream.modern.js"
+      "types": "./dist/zstddec-stream.d.mts",
+      "default": "./dist/zstddec-stream.mjs"
     }
   },
   "scripts": {
-    "build": "microbundle src/{zstddec,zstddec-stream}.ts --format modern,esm,cjs --no-compress",
-    "watch": "microbundle watch src/{zstddec,zstddec-stream}.ts --format modern,esm,cjs --no-compress",
+    "build": "tsdown --format esm src/zstddec.ts src/zstddec-stream.ts",
+    "build:watch": "tsdown --watch --format esm src/zstddec.ts src/zstddec-stream.ts",
     "test": "node --test test/*.test.ts",
     "lint": "biome check src/**/*.ts test/**/*.cjs biome.json .github/**/*.yml",
     "lint:ci": "biome ci src/**/*.ts test/**/*.cjs biome.json .github/**/*.yml",
@@ -43,7 +40,9 @@
   "license": "MIT AND BSD-3-Clause",
   "devDependencies": {
     "@biomejs/biome": "^2.3.11",
-    "microbundle": "^0.15.1"
+    "@types/node": "^26.4.1",
+    "tsdown": "^0.23.0",
+    "typescript": "^6.0.0"
   },
   "files": [
     "dist/",

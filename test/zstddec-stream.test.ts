@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import { test } from 'node:test';
 import { TextDecoder } from 'node:util';
-import { ZSTDDecoder } from '../dist/zstddec-stream.modern.js';
+import { ZSTDDecoder } from '../dist/zstddec-stream.mjs';
 
 const SHORT_TEXT = 'hello world!\n'; // 13 bytes
 const SHORT_TEXT_ZSTD = new Uint8Array([
