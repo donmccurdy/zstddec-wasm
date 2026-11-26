@@ -3,10 +3,28 @@ import { test } from 'node:test';
 import { TextDecoder } from 'node:util';
 import { ZSTDDecoder } from '../dist/zstddec-stream.mjs';
 
+// The decoder's WASM instance is module-private, so the leak test reads its memory through this hook.
+// Node's fetch() instantiates its own WASM through the same global, hence the export check.
+let memory: WebAssembly.Memory | undefined;
+const instantiate = WebAssembly.instantiate;
+WebAssembly.instantiate = (async (source: BufferSource, imports?: WebAssembly.Imports) => {
+	const result = await instantiate(source, imports);
+	const exports = ('instance' in result ? result.instance : (result as WebAssembly.Instance)).exports;
+	if ('ZSTD_decompressStream' in exports) memory = exports.memory as WebAssembly.Memory;
+	return result;
+}) as typeof WebAssembly.instantiate;
+
 const SHORT_TEXT = 'hello world!\n'; // 13 bytes
 const SHORT_TEXT_ZSTD = new Uint8Array([
 	40, 181, 47, 253, 36, 13, 105, 0, 0, 104, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 33, 10, 154, 39, 191, 122,
 ]);
+
+const BAD_MAGIC_ZSTD = SHORT_TEXT_ZSTD.slice();
+BAD_MAGIC_ZSTD[0] ^= 0xff;
+
+// SHORT_TEXT_ZSTD ends with a 4-byte content checksum.
+const BAD_CHECKSUM_ZSTD = SHORT_TEXT_ZSTD.slice();
+BAD_CHECKSUM_ZSTD[BAD_CHECKSUM_ZSTD.length - 1] ^= 0xff;
 
 // Compressed with zstd --no-content-size (67 bytes) - NO content size hint, forces streaming decode
 const LONG_TEXT = 'The quick brown fox jumps over the lazy dog. '.repeat(100); // 4500 bytes
@@ -166,6 +184,83 @@ test('zstddec-stream: streaming decode without init behavior', async () => {
 });
 
 //=============================================================================
+// Error Handling Tests
+//=============================================================================
+
+test('zstddec-stream: full decode of truncated frame throws', async () => {
+	const zstd = new ZSTDDecoder();
+	await zstd.init();
+
+	const truncated = SHORT_TEXT_ZSTD.slice(0, 20);
+
+	assert.throws(() => zstd.decode(truncated, SHORT_TEXT.length), /ZSTDDecoder: zstd error 72/);
+	assert.throws(() => zstd.decode(truncated), /ZSTDDecoder: invalid frame/);
+});
+
+test('zstddec-stream: full decode of corrupt frame throws', async () => {
+	const zstd = new ZSTDDecoder();
+	await zstd.init();
+
+	assert.throws(() => zstd.decode(BAD_MAGIC_ZSTD, SHORT_TEXT.length), /ZSTDDecoder: zstd error 10/);
+	assert.throws(() => zstd.decode(BAD_CHECKSUM_ZSTD), /ZSTDDecoder: zstd error 22/);
+
+	const reservedBit = SHORT_TEXT_ZSTD.slice();
+	reservedBit[4] |= 0x08; // frame header descriptor
+
+	assert.throws(() => zstd.decode(reservedBit, SHORT_TEXT.length), /ZSTDDecoder: zstd error 14/);
+});
+
+test('zstddec-stream: full decode with uncompressed size too small throws, too large decodes', async () => {
+	const zstd = new ZSTDDecoder();
+	await zstd.init();
+
+	assert.throws(() => zstd.decode(SHORT_TEXT_ZSTD, 5), /ZSTDDecoder: zstd error 70/);
+
+	const text = new TextDecoder().decode(zstd.decode(SHORT_TEXT_ZSTD, 100));
+
+	assert.strictEqual(text, SHORT_TEXT, 'decodes text correctly with oversized output');
+});
+
+test('zstddec-stream: streaming decode of truncated frame throws', async () => {
+	const zstd = new ZSTDDecoder();
+	await zstd.init();
+
+	const truncated = SHORT_TEXT_ZSTD.slice(0, 20);
+
+	assert.throws(() => drain(zstd.decodeStreaming([truncated])), /^Error: Incomplete stream/);
+});
+
+test('zstddec-stream: streaming decode of corrupt magic number throws', async () => {
+	const zstd = new ZSTDDecoder();
+	await zstd.init();
+
+	assert.throws(() => drain(zstd.decodeStreaming([BAD_MAGIC_ZSTD])), /ZSTDDecoder: zstd error 10/);
+});
+
+test('zstddec-stream: streaming decode of corrupt checksum throws', async () => {
+	const zstd = new ZSTDDecoder();
+	await zstd.init();
+
+	assert.throws(() => drain(zstd.decodeStreaming([BAD_CHECKSUM_ZSTD])), /ZSTDDecoder: zstd error 22/);
+});
+
+test('zstddec-stream: streaming decode frees memory when the consumer exits early', async () => {
+	const zstd = new ZSTDDecoder();
+	await zstd.init();
+	assert.ok(memory, 'captured decoder memory');
+
+	const exitEarly = () => {
+		for (const _ of zstd.decodeStreaming([SHORT_TEXT_ZSTD])) break;
+	};
+
+	exitEarly(); // warm up, so one-time allocations are not counted
+	const byteLength = memory.buffer.byteLength;
+	for (let i = 0; i < 300; i++) exitEarly();
+
+	assert.strictEqual(memory.buffer.byteLength, byteLength, 'memory does not grow');
+});
+
+//=============================================================================
 // Reusability Tests
 //=============================================================================
 
@@ -232,6 +327,18 @@ function toChunks(array: Uint8Array, chunkByteLength: number) {
 		chunks.push(array.slice(i, i + chunkByteLength));
 	}
 	return chunks;
+}
+
+/**
+ * Collects streamed parts, failing instead of hanging if the decoder stops making progress.
+ */
+function drain(parts: Iterable<Uint8Array>, limit = 1000) {
+	const result = [];
+	for (const part of parts) {
+		result.push(part);
+		assert.ok(result.length < limit, 'decoder stalled');
+	}
+	return result;
 }
 
 /**
