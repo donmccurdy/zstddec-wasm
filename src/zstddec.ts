@@ -46,27 +46,44 @@ export class ZSTDDecoder {
 
 		// Write compressed data into WASM memory.
 		const compressedSize = array.byteLength;
-		const compressedPtr = instance.exports.malloc(compressedSize);
-		heap.set(array, compressedPtr);
+		let compressedPtr = 0;
+		let uncompressedPtr = 0;
 
-		// Decompress into WASM memory.
-		uncompressedSize =
-			uncompressedSize || Number(instance.exports.ZSTD_findDecompressedSize(compressedPtr, compressedSize));
-		const uncompressedPtr = instance.exports.malloc(uncompressedSize);
-		const actualSize = instance.exports.ZSTD_decompress(
-			uncompressedPtr,
-			uncompressedSize,
-			compressedPtr,
-			compressedSize,
-		);
+		try {
+			compressedPtr = malloc(compressedSize);
+			heap.set(array, compressedPtr);
 
-		// Read decompressed data and free WASM memory.
-		const dec = heap.slice(uncompressedPtr, uncompressedPtr + actualSize);
-		instance.exports.free(compressedPtr);
-		instance.exports.free(uncompressedPtr);
+			// Decompress into WASM memory.
+			uncompressedSize =
+				uncompressedSize || Number(instance.exports.ZSTD_findDecompressedSize(compressedPtr, compressedSize));
+			if (uncompressedSize === -2) throw new Error('ZSTDDecoder: invalid frame'); // ZSTD_CONTENTSIZE_ERROR
+			if (uncompressedSize === -1) {
+				throw new Error('ZSTDDecoder: Unknown content size, pass uncompressedSize or use zstddec/stream.');
+			}
+			uncompressedPtr = malloc(uncompressedSize);
+			const actualSize = instance.exports.ZSTD_decompress(
+				uncompressedPtr,
+				uncompressedSize,
+				compressedPtr,
+				compressedSize,
+			);
+			// A negative return is a negated zstd error code, see zstd_errors.h.
+			if (actualSize < 0) throw new Error(`ZSTDDecoder: zstd error ${-actualSize}`);
 
-		return dec;
+			// Read decompressed data and free WASM memory.
+			const dec = heap.slice(uncompressedPtr, uncompressedPtr + actualSize);
+			return dec;
+		} finally {
+			instance.exports.free(compressedPtr);
+			instance.exports.free(uncompressedPtr);
+		}
 	}
+}
+
+function malloc(size: number): number {
+	const ptr = instance.exports.malloc(size);
+	if (ptr === 0) throw new Error('ZSTDDecoder: Out of memory.');
+	return ptr;
 }
 
 /**

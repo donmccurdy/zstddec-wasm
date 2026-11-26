@@ -63,110 +63,140 @@ export class ZSTDDecoder {
 
 		// Write compressed data into WASM memory.
 		const compressedSize = array.byteLength;
-		const compressedPtr = instance.exports.malloc(compressedSize);
-		heap.set(array, compressedPtr);
+		let compressedPtr = 0;
+		let uncompressedPtr = 0;
 
-		// Decompress into WASM memory.
-		if (uncompressedSize === 0) {
-			uncompressedSize = Number(instance.exports.ZSTD_findDecompressedSize(compressedPtr, compressedSize));
-		}
+		try {
+			compressedPtr = malloc(compressedSize);
+			heap.set(array, compressedPtr);
 
-		if (uncompressedSize === -1) {
+			// Decompress into WASM memory.
+			if (uncompressedSize === 0) {
+				uncompressedSize = Number(instance.exports.ZSTD_findDecompressedSize(compressedPtr, compressedSize));
+			}
+			if (uncompressedSize === -2) throw new Error('ZSTDDecoder: invalid frame'); // ZSTD_CONTENTSIZE_ERROR
+
+			if (uncompressedSize === -1) {
+				instance.exports.free(compressedPtr);
+				compressedPtr = 0; // already freed, skip it in `finally`
+				const parts = [];
+
+				for (const out of this.decodeStreaming([array])) {
+					parts.push(out);
+				}
+
+				// if we just received a single part, we can return it directly
+				if (parts.length === 1) {
+					return parts[0];
+				}
+
+				// we may need to stitch together all the accumulated parts
+				const fullByteLength = parts.reduce((acc, arr) => acc + arr.byteLength, 0);
+				const result = new Uint8Array(fullByteLength);
+				let offset = 0;
+				for (const part of parts) {
+					result.set(part, offset);
+					offset += part.byteLength;
+				}
+				return result;
+			}
+			uncompressedPtr = malloc(uncompressedSize);
+			const actualSize = instance.exports.ZSTD_decompress(
+				uncompressedPtr,
+				uncompressedSize,
+				compressedPtr,
+				compressedSize,
+			);
+			// A negative return is a negated zstd error code, see zstd_errors.h.
+			if (actualSize < 0) throw new Error(`ZSTDDecoder: zstd error ${-actualSize}`);
+
+			// Read decompressed data and free WASM memory.
+			const dec = heap.slice(uncompressedPtr, uncompressedPtr + actualSize);
+			return dec;
+		} finally {
 			instance.exports.free(compressedPtr);
-			const parts = [];
-
-			for (const out of this.decodeStreaming([array])) {
-				parts.push(out);
-			}
-
-			// if we just received a single part, we can return it directly
-			if (parts.length === 1) {
-				return parts[0];
-			}
-
-			// we may need to stitch together all the accumulated parts
-			const fullByteLength = parts.reduce((acc, arr) => acc + arr.byteLength, 0);
-			const result = new Uint8Array(fullByteLength);
-			let offset = 0;
-			for (const part of parts) {
-				result.set(part, offset);
-				offset += part.byteLength;
-			}
-			return result;
+			instance.exports.free(uncompressedPtr);
 		}
-		const uncompressedPtr = instance.exports.malloc(uncompressedSize);
-		const actualSize = instance.exports.ZSTD_decompress(
-			uncompressedPtr,
-			uncompressedSize,
-			compressedPtr,
-			compressedSize,
-		);
-
-		// Read decompressed data and free WASM memory.
-		const dec = heap.slice(uncompressedPtr, uncompressedPtr + actualSize);
-		instance.exports.free(compressedPtr);
-		instance.exports.free(uncompressedPtr);
-
-		return dec;
 	}
 
 	*decodeStreaming(arrays: Iterable<Uint8Array>): Generator<Uint8Array> {
 		// code converted to JS from here https://github.com/facebook/zstd/blob/v1.5.0/examples/streaming_decompression.c
 		if (!instance) throw new Error('ZSTDDecoder: Await .init() before decoding.');
 
-		const buffInSize = instance.exports.ZSTD_DStreamInSize();
-		const buffIn = instance.exports.malloc(buffInSize);
-		const buffOutSize = instance.exports.ZSTD_DStreamOutSize();
-		const buffOut = instance.exports.malloc(buffOutSize);
-
-		const dctxPtr = instance.exports.ZSTD_createDCtx();
-
-		const sizeOfPointer = 4; // in WASM 32, a pointer has 32 bits/4 bytes
-		const sizeOfSizeT = 4; // in WASM 32, a size_t has 32 bits/4 bytes
-
-		// we cannot create a struct to pass a pointer to. Thus we need to alloc for the input/output structs and set the fields manually
-		const inputPtr = instance.exports.malloc(sizeOfPointer + sizeOfSizeT * 2);
-		const outputPtr = instance.exports.malloc(sizeOfPointer + sizeOfSizeT * 2);
+		let buffIn = 0;
+		let buffOut = 0;
+		let dctxPtr = 0;
+		let inputPtr = 0;
+		let outputPtr = 0;
+		let compressedPtr = 0;
 		let lastRet = 0;
 
-		for (const array of arrays) {
-			const compressedPtr = instance.exports.malloc(array.byteLength);
-			heap.set(array, compressedPtr);
+		// `finally` also runs when the consumer breaks out of a loop or throws. An iterator that is
+		// started by hand and then dropped must be closed with `.return()`, or its buffers leak.
+		try {
+			const buffInSize = instance.exports.ZSTD_DStreamInSize();
+			buffIn = malloc(buffInSize);
+			const buffOutSize = instance.exports.ZSTD_DStreamOutSize();
+			buffOut = malloc(buffOutSize);
 
-			// set input struct fields: src, size, pos
-			heapView.setInt32(inputPtr, compressedPtr, true);
-			heapView.setInt32(inputPtr + sizeOfPointer, array.byteLength, true);
-			heapView.setInt32(inputPtr + sizeOfPointer + sizeOfSizeT, 0, true);
+			dctxPtr = instance.exports.ZSTD_createDCtx();
+			if (dctxPtr === 0) throw new Error('ZSTDDecoder: Out of memory.');
 
-			// we must repeat as long as ZSTD_inBuffer.size < ZSTD_inBuffer.pos
-			while (
-				heapView.getUint32(inputPtr + sizeOfPointer + sizeOfSizeT, true) <
-				heapView.getUint32(inputPtr + sizeOfPointer, true)
-			) {
-				// set output struct fields: src, size, pos
-				heapView.setInt32(outputPtr, buffOut, true);
-				heapView.setInt32(outputPtr + sizeOfPointer, buffOutSize, true);
-				heapView.setInt32(outputPtr + sizeOfPointer + sizeOfSizeT, 0, true);
+			const sizeOfPointer = 4; // in WASM 32, a pointer has 32 bits/4 bytes
+			const sizeOfSizeT = 4; // in WASM 32, a size_t has 32 bits/4 bytes
 
-				lastRet = instance.exports.ZSTD_decompressStream(dctxPtr, outputPtr, inputPtr);
+			// we cannot create a struct to pass a pointer to. Thus we need to alloc for the input/output structs and set the fields manually
+			inputPtr = malloc(sizeOfPointer + sizeOfSizeT * 2);
+			outputPtr = malloc(sizeOfPointer + sizeOfSizeT * 2);
 
-				// see how many bytes were written to the output buffer
-				const outputPos = heapView.getUint32(outputPtr + sizeOfPointer + sizeOfSizeT, true);
-				yield heap.slice(buffOut, buffOut + outputPos);
+			for (const array of arrays) {
+				compressedPtr = malloc(array.byteLength);
+				heap.set(array, compressedPtr);
+
+				// set input struct fields: src, size, pos
+				heapView.setInt32(inputPtr, compressedPtr, true);
+				heapView.setInt32(inputPtr + sizeOfPointer, array.byteLength, true);
+				heapView.setInt32(inputPtr + sizeOfPointer + sizeOfSizeT, 0, true);
+
+				// we must repeat as long as ZSTD_inBuffer.size < ZSTD_inBuffer.pos
+				while (
+					heapView.getUint32(inputPtr + sizeOfPointer + sizeOfSizeT, true) <
+					heapView.getUint32(inputPtr + sizeOfPointer, true)
+				) {
+					// set output struct fields: src, size, pos
+					heapView.setInt32(outputPtr, buffOut, true);
+					heapView.setInt32(outputPtr + sizeOfPointer, buffOutSize, true);
+					heapView.setInt32(outputPtr + sizeOfPointer + sizeOfSizeT, 0, true);
+
+					lastRet = instance.exports.ZSTD_decompressStream(dctxPtr, outputPtr, inputPtr);
+					if (lastRet < 0) throw new Error(`ZSTDDecoder: zstd error ${-lastRet}`);
+
+					// see how many bytes were written to the output buffer
+					const outputPos = heapView.getUint32(outputPtr + sizeOfPointer + sizeOfSizeT, true);
+					yield heap.slice(buffOut, buffOut + outputPos);
+				}
+				instance.exports.free(compressedPtr);
+				compressedPtr = 0;
 			}
+		} finally {
+			instance.exports.ZSTD_freeDCtx(dctxPtr);
+			instance.exports.free(buffIn);
+			instance.exports.free(buffOut);
+			instance.exports.free(inputPtr);
+			instance.exports.free(outputPtr);
 			instance.exports.free(compressedPtr);
 		}
-
-		instance.exports.ZSTD_freeDCtx(dctxPtr);
-		instance.exports.free(buffIn);
-		instance.exports.free(buffOut);
-		instance.exports.free(inputPtr);
-		instance.exports.free(outputPtr);
 
 		if (lastRet !== 0) {
 			throw new Error('Incomplete stream, more data expected.');
 		}
 	}
+}
+
+function malloc(size: number): number {
+	const ptr = instance.exports.malloc(size);
+	if (ptr === 0) throw new Error('ZSTDDecoder: Out of memory.');
+	return ptr;
 }
 
 /**
